@@ -1,0 +1,30 @@
+{
+  "name": "agent-coding-standards-cli",
+  "dockerComposeFile": ["compose.yml"],
+  "service": "main",
+  "overrideCommand": true,
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+  },
+
+  "updateContentCommand": "sudo bash .devcontainer/boot.sh",
+  "postCreateCommand": "npm install -g @devcontainers/cli",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Company defaults
+        "EditorConfig.EditorConfig",
+        "sleistner.vscode-fileutils",
+        "github.vscode-github-actions",
+        "SanjulaGanepola.github-local-actions",
+        "christian-kohler.path-intellisense",
+        "soerenuhrbach.vscode-deepl",
+        "kilocode.kilo-code"
+      ]
+    }
+  }
+}
