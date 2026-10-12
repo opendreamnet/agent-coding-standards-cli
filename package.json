@@ -1,0 +1,54 @@
+{
+  "name": "@opendreamnet/agent-coding-standards-cli",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "prettier": "@opendreamnet/prettier-config",
+  "release-it": {
+    "extends": "github:opendreamnet/release-it-config",
+    "git": {
+      "tagName": "v${version}",
+      "commitMessage": "chore(release): v${version}"
+    }
+  },
+  "scripts": {
+    "build": "scriptc build src/index.ts --npm-static auto -o build/agent-coding-standards",
+    "test": "node --test",
+    "test:native": "pnpm build && CLI_TEST_BINARY=./build/agent-coding-standards node --test",
+    "lint": "oxlint --type-aware .",
+    "typecheck": "tsc --noEmit",
+    "prettier:check": "prettier --check --ignore-path ../../.gitignore .",
+    "prettier:fix": "prettier --write --ignore-path ../../.gitignore .",
+    "release": "release-it",
+    "upgrade": "pnpm dlx npm-check-updates -i",
+    "deploy": "git push --follow-tags origin develop && git push origin develop:master"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.11.2",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.11.2",
+  "devDependencies": {
+    "@opendreamnet/prettier-config": "^0.1.3",
+    "@prettier/plugin-oxc": "^0.2.3",
+    "@release-it/conventional-changelog": "^12.0.2",
+    "@tsconfig/node-lts": "^24.0.1",
+    "@types/node": "^24.19.2",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2004",
+    "prettier": "^3.9.10",
+    "release-it": "^21.1.1",
+    "scriptc": "^0.2.8",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "tslog": "^5.2.0"
+  }
+}

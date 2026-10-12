@@ -1,0 +1,61 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/oxlint@1.56.0/configuration_schema.json",
+  "categories": {
+    "correctness": "warn",
+    "perf": "warn",
+    "style": "warn",
+    "suspicious": "warn"
+  },
+  "env": {
+    "es2024": true
+  },
+  "ignorePatterns": ["build"],
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "promise"
+  ],
+  "rules": {
+    "capitalized-comments": "allow",
+    "eslint/init-declarations": "allow",
+    "exports-last": "allow",
+    "func-style": ["warn", "declaration"],
+    "id-length": [
+      "warn",
+      {
+        "exceptions": ["_", "z", "x", "y", "t", "T"]
+      }
+    ],
+    "import/consistent-type-specifier-style": ["off"],
+    "import/group-exports": "allow",
+    "import/no-named-export": "off",
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["reflect-metadata"]
+      }
+    ],
+    "import/prefer-default-export": "allow",
+    "max-params": [
+      "error",
+      {
+        "max": 4
+      }
+    ],
+    "max-statements": "allow",
+    "new-cap": "allow",
+    "no-await-in-loop": "allow",
+    "no-continue": "allow",
+    "no-magic-numbers": "allow",
+    "no-namespace": "allow",
+    "no-ternary": "allow",
+    "one-var": "allow",
+    "sort-imports": "allow",
+    "sort-keys": "off",
+    "unicorn/filename-case": "allow",
+    "unicorn/no-null": "allow"
+  }
+}
