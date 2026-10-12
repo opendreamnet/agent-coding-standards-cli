@@ -1,17 +1,22 @@
 {
   "name": "agent-coding-standards-cli",
-  "dockerComposeFile": ["compose.yml"],
-  "service": "main",
-  "overrideCommand": true,
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:24",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
   "workspaceFolder": "/workspace",
+
+  "updateContentCommand": "sudo bash .devcontainer/boot.sh",
+  "postCreateCommand": "bash .devcontainer/init.sh",
+
+  "mounts": [
+    "source=user_config_data,target=/home/node/.config,type=volume",
+    "source=user_local_data,target=/home/node/.local,type=volume"
+  ],
 
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+    "ghcr.io/opendreamnet/devcontainer-features/tatr:1": {},
+    "ghcr.io/opendreamnet/devcontainer-features/upx:1": {}
   },
-
-  "updateContentCommand": "sudo bash .devcontainer/boot.sh",
-  "postCreateCommand": "npm install -g @devcontainers/cli",
 
   "customizations": {
     "vscode": {
