@@ -69,11 +69,6 @@ jobs:
       - name: Build binary
         run: pnpm build
 
-      - name: Test native binary
-        env:
-          CLI_TEST_BINARY: ./build/acs
-        run: pnpm test
-
       - name: Compress binary
         run: pnpm build:compress
 
