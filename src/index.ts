@@ -11,7 +11,7 @@ const program = new Command()
     'after',
     `
 Rules contract: stable vX.Y.Z tags containing profiles/<name>.md.
-CODING.md front matter: codingStandards { repository, version, revision, profiles }.
+CODING.md front matter: repository, version, revision and profiles at the YAML root.
 Requires Git on PATH. Private repositories use Git credential helpers (HTTPS)
 or the SSH agent (--transport ssh). Tokens are never embedded in remote URLs.
 Project-specific instructions remain in AGENTS.md, which this CLI never modifies.
@@ -41,7 +41,7 @@ for (const name of ['init', 'sync', 'update', 'check'] as const) {
       )
       .requiredOption(
         '--profiles <names...>',
-        'Ordered profile names; no profiles are added implicitly',
+        'Ordered profile names (e.g. --profiles typescript vue); no profiles are added implicitly',
       )
       .option(
         '--version <X.Y.Z>',
