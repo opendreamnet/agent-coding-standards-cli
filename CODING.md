@@ -35,6 +35,7 @@ framework-specific rules specialize general rules within that framework's scope.
 - Avoid `build` scripts unless a build is genuinely required, because they can take a significant amount of time.
 - Resolve tools from the package or workspace that owns the code; do not assume a particular installation layout or silently download missing tools. Report checks not run and the reason.
 - Add or update tests for changed behavior and run the relevant suite, including failure paths. Type checking and formatting are not substitutes for behavioral tests.
+- After formatting, manually review changed code against the visual-density and documentation rules below. Passing Prettier, lint, type checking or tests does not establish compliance with rules those tools do not enforce. Check sibling multiline statements, named function and method documentation, and comment layout before reporting completion.
 
 ## Naming conventions
 
@@ -65,6 +66,9 @@ Apply these rules to `**/*.{ts,tsx,cts,mts}`.
 Avoid:
 
 ```ts
+/**
+ * Provides the parser implementation without performing parsing.
+ */
 async function loadParser() {
   const { parse } = await import('./parser')
 
@@ -77,6 +81,9 @@ Prefer:
 ```ts
 import { parse } from './parser'
 
+/**
+ * Provides the parser implementation without performing parsing.
+ */
 async function loadParser() {
   return parse
 }
@@ -120,8 +127,12 @@ Keep the root focused on wiring and coordination:
 ```ts
 class FeatureOrchestrator {
   readonly #featureModule: FeatureModule
+
   readonly #secondaryModule: SecondaryModule
 
+  /**
+   * Constructs the feature modules and shares the primary dependency.
+   */
   constructor() {
     this.#featureModule = new FeatureModule()
 
@@ -145,6 +156,9 @@ interface TranslatorOptions {
 class Translator {
   readonly #sourceLang: string
 
+  /**
+   * Captures the source language for the translator's lifetime.
+   */
   constructor(options: TranslatorOptions) {
     this.#sourceLang = options.sourceLang
   }
@@ -240,11 +254,17 @@ class UserService {
 
   readonly #repository: UserRepository
 
+  /**
+   * Binds operations to one user and its persistence repository.
+   */
   constructor(user: User, repository: UserRepository) {
     this.#user = user
     this.#repository = repository
   }
 
+  /**
+   * Returns the display label of the configured user.
+   */
   displayName(): string {
     return this.#user.displayName
   }
@@ -279,6 +299,9 @@ Good: private implementation with a documented protected hook:
 abstract class BaseTask {
   #isRunning = false
 
+  /**
+   * Rejects concurrent runs and always releases the running guard afterward.
+   */
   public async run(): Promise<void> {
     if (this.#isRunning) {
       throw new Error('Task is already running')
@@ -307,8 +330,12 @@ Avoid exposing every implementation detail as `protected`:
 ```ts
 class Task {
   protected isRunning = false
+
   protected config = {}
 
+  /**
+   * Replaces the task's running status.
+   */
   protected setRunning(value: boolean): void {
     this.isRunning = value
   }
@@ -325,6 +352,9 @@ interface Formatter {
 class MessageService {
   readonly #formatter: Formatter
 
+  /**
+   * Captures the formatting strategy for this service's lifetime.
+   */
   constructor(formatter: Formatter) {
     this.#formatter = formatter
   }
@@ -347,11 +377,13 @@ These conventions describe general writing habits.
 
 ### Visual density and blank lines
 
-- Group statements by purpose and separate logical phases with one blank line. Do not split cohesive code solely to satisfy a line count or a change from `const` to `let`.
-- Treat multiline expressions and literals as logical units. Add surrounding blank lines when they separate distinct phases, not automatically around every multiline expression.
+- Group consecutive single-line statements only when they serve the same purpose. Separate different phases with exactly one blank line; a data dependency alone does not make normalization, validation, reporting and termination one phase.
+- At statement level, every multiline declaration, assignment, call, return expression or control-flow block is a separate visual unit. Put one blank line between that unit and any preceding or following sibling statement, even when the statements share variables or belong to the same workflow. For example, do not attach another declaration to a multiline ternary, another call to a multiline call, or a second independent `if` to the closing brace of the first.
+- Apply the same separation inside function bodies and callbacks. Do not insert padding at the beginning or end of a block. Keep attached `else`, `catch`, `finally` and the `while` of `do...while` together with their control-flow construct.
+- This statement-level rule does not split an expression internally: keep a method chain, call arguments, object properties, array elements and a declaration's attached documentation together. Imports remain a single group, including multiline imports. These are the explicit exceptions; "cohesive code" is not an exception for adjacent multiline sibling statements.
 - Put one blank line between the import section and the first declaration.
 - Do not add padding immediately after an opening brace or immediately before a closing brace. A blank line should communicate a change of intent, not decorate a block.
-- In a method with several guards, group related checks together and separate groups with one blank line. Leave a blank line before the successful fall-through return when it improves readability.
+- Separate consecutive guard blocks with one blank line, even when they validate related inputs. Leave one blank line between a guard block and the successful fall-through statement or return.
 - Separate phases inside longer methods with a blank line; add a short comment only when it explains intent not already clear from the code.
 - Separate meaningful sections of long arrays and object literals with a blank line. Keep closely related properties together.
 - Use an extra scoped block only when it gives a logical phase its own local variables or prevents a name collision; do not use blocks only to add visual spacing.
@@ -377,6 +409,40 @@ const scale = Math.max(4, input.rounding.scale)
 const salary = salaryResolution.record
 
 let line: PayrollLineResult | null = null
+```
+
+The following adjacent statements are not compliant:
+
+```ts
+const repository = value.startsWith('https://github.com/')
+  ? value.slice('https://github.com/'.length)
+  : value
+const match = pattern.exec(repository)
+
+if (isInitialCommand) {
+  configureInitialOptions()
+}
+if (canWrite) {
+  configureWriteOptions()
+}
+```
+
+Separate them without changing their behavior:
+
+```ts
+const repository = value.startsWith('https://github.com/')
+  ? value.slice('https://github.com/'.length)
+  : value
+
+const match = pattern.exec(repository)
+
+if (isInitialCommand) {
+  configureInitialOptions()
+}
+
+if (canWrite) {
+  configureWriteOptions()
+}
 ```
 
 ### Declarations and expressions
@@ -408,14 +474,28 @@ let line: PayrollLineResult | null = null
 ### TypeScript comments (`**/*.{ts,tsx,cts,mts}`)
 
 - Keep comments high-signal and maintenance-friendly.
-- Document exported contracts and non-obvious behavior with `/** ... */`: include relevant assumptions, side effects, failure modes, or units. Do not add docblocks to obvious callbacks, accessors, or private helpers merely to satisfy coverage.
+- Document every named function and implemented method, including constructors, accessors, file-local helpers and private methods, with an attached multiline JSDoc block. Internal visibility and an apparently descriptive name are not reasons to omit documentation. State the purpose or contract, adding relevant input constraints, return semantics, side effects, failure modes or units; do not merely repeat the identifier.
+- Document exported types and interfaces with multiline JSDoc describing their contract. Callable signatures without an implementation need additional documentation when their semantics are not clear from the surrounding contract.
+- Obvious anonymous callbacks, such as a direct mapping or a test callback already described by its test name, do not require their own docblock. Document non-obvious callback behavior near its implementation; do not invent boilerplate comments for every callback.
 - Document fields and properties when their meaning or constraints are not clear from their names and types.
 - Explain intent, assumptions, side effects, and non-obvious steps; avoid narrating obvious syntax.
 - Keep comments updated with code changes and remove stale comments.
-- Use multiline docblocks when documentation is needed; keep them concise.
-- Prefer short `//` section comments in function bodies and other code when they make logical sections easier to locate quickly, such as `// Validate input`, `// Prepare request`, or `// Charge credits`. Keep the comment immediately above the section it describes and use it for a real conceptual group, not every individual statement.
-- Keep inline comments near the relevant lines when a step is non-obvious, algorithmically complex, or coupled to behavior in another module or service.
+- All documentation and explanatory prose comments must be multiline, even when the text is a single sentence. Use `/**` on its own line, ` * ...` content lines and ` */` on its own line for declarations. Use the equivalent multiline `/* ... */` layout for implementation explanations. A one-line `/** ... */` or one-line prose `// ...` is not compliant; concise refers to the text, not to collapsing the delimiters.
+- Reserve `//` for short section labels such as `// Validate input`, `// Prepare request` or `// Charge credits`, and for tool/compiler directives that require that syntax. Keep labels immediately above a real conceptual group. Do not classify explanatory sentences as section labels to bypass the multiline requirement. Tool directives may retain their required single-line or inline block format.
+- Keep implementation explanations near the non-obvious, algorithmically complex or cross-module step they describe, using multiline blocks rather than trailing prose comments.
 - Do not add empty docblocks or comments that only restate obvious syntax.
+- These layout and documentation rules also apply to handwritten JavaScript supporting the same package, including test helpers. They do not require changes to generated or third-party code.
+
+One sentence still uses a multiline docblock:
+
+```ts
+/**
+ * Parses configuration without reserializing unrelated YAML metadata.
+ */
+function parseConfiguration(content: string): Configuration {
+  return parseHeader(content).configuration
+}
+```
 
 Use a docblock to explain a contract that is not apparent from the signature:
 
@@ -435,6 +515,9 @@ async function enhancePrompt(prompt: string): Promise<string> {
 Avoid section comments that only repeat the next statement:
 
 ```ts
+/**
+ * Returns the prompt prepared for enhancement.
+ */
 async function enhancePrompt(prompt: string): Promise<string> {
   // Set request
   const request = preparePromptRequest(prompt)
@@ -452,5 +535,6 @@ When rules conflict, apply this order:
 3. Naming, commenting, and other style preferences.
 
 - Prefer minimal, targeted edits.
+- The precedence above resolves actual conflicts only. Runtime compatibility or a successful formatter run does not justify omitting blank lines or documentation when those conventions can be applied without changing behavior.
 - Do not change runtime behavior unless required by the task.
 - If intent is unclear and logic changes are risky, keep behavior unchanged and state the assumption in the response.

@@ -1,7 +1,7 @@
 {
   "name": "@opendreamnet/agent-coding-standards-cli",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.0",
+  "description": "Generate pinned coding standards from shared GitHub profiles",
   "type": "module",
   "keywords": [],
   "author": "",
@@ -15,16 +15,18 @@
     }
   },
   "scripts": {
-    "build": "scriptc build src/index.ts --npm-static auto -o build/agent-coding-standards",
+    "dev": "node src/index.ts",
+    "build": "scriptc build src/index.ts --dynamic -o build/acs",
+    "build:compress": "upx build/acs",
     "test": "node --test",
-    "test:native": "pnpm build && CLI_TEST_BINARY=./build/agent-coding-standards node --test",
+    "test:native": "pnpm build && CLI_TEST_BINARY=./build/acs node --test",
     "lint": "oxlint --type-aware .",
     "typecheck": "tsc --noEmit",
-    "prettier:check": "prettier --check --ignore-path ../../.gitignore .",
-    "prettier:fix": "prettier --write --ignore-path ../../.gitignore .",
-    "release": "release-it",
+    "prettier:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore .",
+    "prettier:fix": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore .",
     "upgrade": "pnpm dlx npm-check-updates -i",
-    "deploy": "git push --follow-tags origin develop && git push origin develop:master"
+    "release": "release-it",
+    "deploy": "git push --follow-tags origin develop && git push origin develop:main"
   },
   "devEngines": {
     "packageManager": {
@@ -49,6 +51,7 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
-    "tslog": "^5.2.0"
+    "diff": "^9.0.0",
+    "yaml": "^2.9.1"
   }
 }

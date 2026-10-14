@@ -1,0 +1,152 @@
+name: 'Release'
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || (github.event.created && !github.event.deleted)
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate release tag
+        run: |
+          if [[ "$GITHUB_REF_TYPE" != tag ]]; then
+            echo "::error::Select a version tag when dispatching this workflow."
+
+            exit 1
+          fi
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::The selected tag must have the stable version format vX.Y.Z."
+
+            exit 1
+          fi
+
+          version="${GITHUB_REF_NAME#v}"
+
+          printf 'Release version: %s\n' "$version"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node.js LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y clang
+
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v4
+        with:
+          version: v5.2.1
+          install-only: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check types, lint and formatting
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm prettier:check
+
+      - name: Build binary
+        run: pnpm build
+
+      - name: Test native binary
+        env:
+          CLI_TEST_BINARY: ./build/acs
+        run: pnpm test
+
+      - name: Compress binary
+        run: pnpm build:compress
+
+      - name: Test compressed binary
+        env:
+          CLI_TEST_BINARY: ./build/acs
+        run: |
+          upx --test build/acs
+          pnpm test
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-x64
+          path: build/acs
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    name: Publish GitHub Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: release
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: artifacts
+        run: |
+          sha256sum -- acs | tee SHA256SUMS.txt
+
+      - name: Publish release as github-actions[bot]
+        working-directory: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          tag_commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/refs%2Ftags%2F$RELEASE_TAG" --jq .sha)"
+
+          if [[ "$tag_commit" != "$RELEASE_SHA" ]]; then
+            echo "::error::The selected tag no longer points to the compiled commit."
+
+            exit 1
+          fi
+
+          gh release create "$RELEASE_TAG" acs SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --generate-notes

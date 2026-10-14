@@ -1,0 +1,93 @@
+name: 'Build'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - .github/workflows/release.yaml
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.json
+
+concurrency:
+  group: build-${{ github.repository }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node.js LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y clang
+
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v4
+        with:
+          version: v5.2.1
+          install-only: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check types, lint and formatting
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm prettier:check
+
+      - name: Build binary
+        run: pnpm build
+
+      - name: Test native binary
+        env:
+          CLI_TEST_BINARY: ./build/acs
+        run: pnpm test
+
+      - name: Compress binary
+        run: pnpm build:compress
+
+      - name: Test compressed binary
+        env:
+          CLI_TEST_BINARY: ./build/acs
+        run: |
+          upx --test build/acs
+          pnpm test
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-x64
+          path: build/acs
+          if-no-files-found: error
