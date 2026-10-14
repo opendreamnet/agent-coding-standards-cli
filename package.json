@@ -12,9 +12,6 @@
     "git": {
       "tagName": "v${version}",
       "commitMessage": "chore(release): v${version}"
-    },
-    "npm": {
-      "publishPackageManager": "pnpm"
     }
   },
   "scripts": {
@@ -30,13 +27,6 @@
     "upgrade": "pnpm dlx npm-check-updates -i",
     "release": "release-it",
     "deploy": "git push --follow-tags origin develop && git push origin develop:main"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.11.2",
-      "onFail": "download"
-    }
   },
   "packageManager": "pnpm@12.11.2",
   "devDependencies": {
