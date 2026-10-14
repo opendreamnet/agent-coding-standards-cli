@@ -5,7 +5,6 @@
   "type": "module",
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "prettier": "@opendreamnet/prettier-config",
   "release-it": {
     "extends": "github:opendreamnet/release-it-config",

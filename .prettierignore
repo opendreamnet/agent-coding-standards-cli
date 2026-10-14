@@ -1,3 +1,5 @@
 # Generated package-manager and Agent Manager state.
 pnpm-lock.yaml
 .kilo/agent-manager.json
+README.md
+CHANGELOG.md
