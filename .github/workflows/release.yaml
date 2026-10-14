@@ -73,6 +73,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Cached postinstall output does not include permission changes in sibling packages.
+      - name: Restore scriptc toolchain permissions
+        run: pnpm rebuild scriptc
+
       - name: Check types, lint and formatting
         run: |
           pnpm typecheck
